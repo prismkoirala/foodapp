@@ -30,7 +30,7 @@ class MenuCategory(models.Model):
         ordering = ['cat_order']
 
     def __str__(self):
-        return f"{self.name} ({self.menu_group.type})"
+        return f"{self.name} ({self.menu_group.type} - {self.menu_group.restaurant.name})"
 
 class MenuItem(models.Model):
     name = models.CharField(max_length=100)
