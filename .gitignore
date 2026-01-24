@@ -1,0 +1,18 @@
+# Python / Django / virtual environments
+*.pyc
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+env/
+venv/
+ENV/
+env.bak/
+.env
+.venv/
+foodapp/
+foodapp-env/
+.tox/
+.idea/
+.vscode/
