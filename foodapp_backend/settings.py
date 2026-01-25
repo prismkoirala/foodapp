@@ -61,8 +61,8 @@ if USE_CLOUDINARY:
         'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
         'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
         'SECURE': True,
-
-        'TIMEOUT': 30, 
+        'API_PROXY': 'http://proxy.server:3128',
+        'TIMEOUT': 30,
     }
 
     # Configure the cloudinary lib (recommended for consistency)
