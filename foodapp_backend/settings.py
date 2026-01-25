@@ -74,8 +74,8 @@ if USE_CLOUDINARY:
         secure=True,
 
         #for free account of pythonanywhere
-        http_proxy='http://proxy.server:3128',
-        https_proxy='http://proxy.server:3128',
+        # http_proxy='http://proxy.server:3128',
+        # https_proxy='http://proxy.server:3128',
     )
 
     # Base URL for media (Cloudinary CDN)
