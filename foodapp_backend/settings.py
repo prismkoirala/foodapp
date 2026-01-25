@@ -61,7 +61,7 @@ if USE_CLOUDINARY:
         'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
         'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
         'SECURE': True,
-        'API_PROXY': 'http://proxy.server:3128',
+        # 'API_PROXY': 'http://proxy.server:3128',
         'TIMEOUT': 30,
     }
 
@@ -72,7 +72,7 @@ if USE_CLOUDINARY:
         api_key=os.getenv('CLOUDINARY_API_KEY'),
         api_secret=os.getenv('CLOUDINARY_API_SECRET'),
         secure=True,
-
+        api_proxy='http://proxy.server:3128'
         #for free account of pythonanywhere
         # http_proxy='http://proxy.server:3128',
         # https_proxy='http://proxy.server:3128',
