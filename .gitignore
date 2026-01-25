@@ -16,3 +16,4 @@ foodapp-env/
 .tox/
 .idea/
 .vscode/
+db.sqlite3
