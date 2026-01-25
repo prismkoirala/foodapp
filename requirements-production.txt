@@ -1,0 +1,26 @@
+# Production Requirements
+# Install with: pip install -r requirements-production.txt
+
+# Base requirements
+-r requirements.txt
+
+# Production Server
+gunicorn==21.2.0
+
+# PostgreSQL
+psycopg2-binary==2.9.9
+
+# Optional: AWS S3 Storage
+django-storages==1.14.2
+boto3==1.34.19
+
+# Optional: Redis Cache
+django-redis==5.4.0
+redis==5.0.1
+
+# Optional: Error Tracking
+sentry-sdk==1.39.2
+
+# Security
+django-csp==3.8
+django-ratelimit==4.1.0

@@ -4,3 +4,28 @@ django-filter==25.2
 djangorestframework==3.16.1
 pillow==12.1.0
 sqlparse==0.5.5
+
+# JWT Authentication
+djangorestframework-simplejwt==5.3.1
+
+# CORS Headers
+django-cors-headers==4.6.0
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# QR Code Generation
+qrcode==8.0
+
+# Production Server
+gunicorn==23.0.0
+
+# PostgreSQL
+psycopg2-binary==2.9.10
+
+# Testing
+pytest-django==4.9.0
+factory-boy==3.3.1
+
+# API Documentation
+drf-spectacular==0.28.0

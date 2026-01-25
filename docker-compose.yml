@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: foodapp_db
+    environment:
+      POSTGRES_DB: foodapp_prod
+      POSTGRES_USER: foodapp_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - foodapp_network
+    restart: unless-stopped
+
+  # Redis Cache (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: foodapp_redis
+    networks:
+      - foodapp_network
+    restart: unless-stopped
+
+  # Django Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: foodapp_backend
+    environment:
+      - DJANGO_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_NAME=foodapp_prod
+      - DB_USER=foodapp_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    depends_on:
+      - db
+      - redis
+    networks:
+      - foodapp_network
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 foodapp_backend.wsgi:application"
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: foodapp_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_volume:/var/www/static
+      - media_volume:/var/www/media
+      - ./frontend/apps/customer-app/dist:/var/www/customer-app
+      - ./frontend/apps/manager-portal/dist:/var/www/manager-portal
+      - ./frontend/apps/kitchen-display/dist:/var/www/kitchen-display
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - backend
+    networks:
+      - foodapp_network
+    restart: unless-stopped
+
+  # Certbot for SSL
+  certbot:
+    image: certbot/certbot
+    container_name: foodapp_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+
+networks:
+  foodapp_network:
+    driver: bridge

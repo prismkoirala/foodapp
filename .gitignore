@@ -16,3 +16,7 @@ foodapp-env/
 .tox/
 .idea/
 .vscode/
+
+# Claude AI / AI-related directories
+.claude/
+.anthropic/
