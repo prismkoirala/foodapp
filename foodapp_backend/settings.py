@@ -61,6 +61,8 @@ if USE_CLOUDINARY:
         'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
         'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
         'SECURE': True,
+
+        'TIMEOUT': 30, 
     }
 
     # Configure the cloudinary lib (recommended for consistency)
@@ -70,6 +72,10 @@ if USE_CLOUDINARY:
         api_key=os.getenv('CLOUDINARY_API_KEY'),
         api_secret=os.getenv('CLOUDINARY_API_SECRET'),
         secure=True
+
+        #for free account of pythonanywhere
+        http_proxy='http://proxy.server:3128',
+        https_proxy='http://proxy.server:3128',
     )
 
     # Base URL for media (Cloudinary CDN)
