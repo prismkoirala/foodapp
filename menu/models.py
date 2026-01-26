@@ -34,11 +34,15 @@ class Restaurant(models.Model):
     address = models.TextField()
     phone = models.CharField(max_length=50, blank=True)
     logo = models.ImageField(
-            upload_to=restaurant_logo_path,   # ← callable here
+            upload_to=restaurant_logo_path, 
             blank=True,
             null=True,
-            storage=MediaCloudinaryStorage()  # keep if you're using per-field
+            storage=MediaCloudinaryStorage()  
         )
+    facebook_url = models.CharField(max_length=200, blank=True)
+    instagram_url = models.CharField(max_length=200, blank=True)
+    tiktok_url = models.CharField(max_length=200, blank=True)
+
     def __str__(self):
         return self.name
 

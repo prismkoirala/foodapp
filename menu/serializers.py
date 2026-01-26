@@ -26,4 +26,4 @@ class RestaurantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Restaurant
-        fields = ('id', 'name', 'address', 'phone', 'logo', 'menu_groups')
+        fields = ('id', 'name', 'address', 'phone', 'logo', 'facebook_url', 'instagram_url', 'tiktok_url', 'menu_groups' )
