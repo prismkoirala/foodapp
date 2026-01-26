@@ -10,6 +10,13 @@ from menu.serializers import (
 class RestaurantDetail(generics.RetrieveAPIView):
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantSerializer
+    lookup_field = 'pk'  # or 'pk' depending on your URL
+
+    # Optional: prefetch related data for performance
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related(
+            'menu_groups__categories__items'
+        )
 
 class MenuGroupList(generics.ListAPIView):
     queryset = MenuGroup.objects.all()

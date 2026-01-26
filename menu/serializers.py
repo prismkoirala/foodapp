@@ -8,11 +8,17 @@ class MenuItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'price', 'image', 'item_order')
 
 class MenuCategorySerializer(serializers.ModelSerializer):
-    items = MenuItemSerializer(many=True, read_only=True)
-
+    # items = MenuItemSerializer(many=True, read_only=True)
+    items = serializers.SerializerMethodField()
     class Meta:
         model = MenuCategory
         fields = ('id', 'name', 'image', 'cat_order', 'items')
+    
+    def get_items(self, obj):
+        # Filter out disabled items + order them
+        active_items = obj.items.filter(is_disabled=False).order_by('item_order')
+        print('AI->', active_items)
+        return MenuItemSerializer(active_items, many=True).data
 
 class MenuGroupSerializer(serializers.ModelSerializer):
     categories = MenuCategorySerializer(many=True, read_only=True)
