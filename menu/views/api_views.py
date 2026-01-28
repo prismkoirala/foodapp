@@ -36,3 +36,13 @@ class MenuItemList(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['category']
     search_fields = ['name', 'description']  # For the search functionality across items
+
+class HighlightedMenuItemsList(generics.ListAPIView):
+    serializer_class = MenuItemSerializer
+
+    def get_queryset(self):
+        return MenuItem.objects.filter(
+            category__menu_group__restaurant__pk=self.kwargs['restaurant_pk'],
+            is_highlight=True,
+            is_disabled=False
+        ).order_by('item_order')

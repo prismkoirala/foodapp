@@ -87,6 +87,7 @@ class MenuItem(models.Model):
     category = models.ForeignKey(MenuCategory, on_delete=models.CASCADE, related_name='items')
     item_order = models.PositiveIntegerField(default=0)
     is_disabled = models.BooleanField(default=False)
+    is_highlight = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['item_order']
