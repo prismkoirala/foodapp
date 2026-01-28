@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     "cloudinary_storage",
     "profiles",
     "menu",
+    "utils",
 ]
 
 REST_FRAMEWORK = {

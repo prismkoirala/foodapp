@@ -1,7 +1,7 @@
 # menu/serializers.py
 from rest_framework import serializers
 from .models import Restaurant, MenuGroup, MenuCategory, MenuItem
-
+from utils.serializers import AnnouncementSerializer
 class MenuItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = MenuItem
@@ -29,7 +29,12 @@ class MenuGroupSerializer(serializers.ModelSerializer):
 
 class RestaurantSerializer(serializers.ModelSerializer):
     menu_groups = MenuGroupSerializer(many=True, read_only=True)
-
+    announcements = serializers.SerializerMethodField()
     class Meta:
         model = Restaurant
-        fields = ('id', 'name', 'address', 'phone', 'logo', 'facebook_url', 'instagram_url', 'tiktok_url', 'menu_groups' )
+        fields = ('id', 'name', 'address', 'phone', 'logo', 'announcements', 'facebook_url', 'instagram_url', 'tiktok_url', 'menu_groups' )
+        
+    def get_announcements(self, obj):
+        # Only return currently active announcements
+        active_announcements = obj.announcements.filter(is_active=True)
+        return AnnouncementSerializer(active_announcements, many=True).data
