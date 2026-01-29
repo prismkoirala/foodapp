@@ -1,14 +1,43 @@
-# menu/urls.py (add to your app's urls.py)
+# menu/urls.py
 from django.urls import path
 from .views.api_views import (
-    RestaurantDetail, MenuGroupList,
-    MenuCategoryList, MenuItemList, HighlightedMenuItemsList
+    # Customer/Public views (for QR menu)
+    RestaurantDetail, 
+    MenuGroupList,
+    MenuCategoryList, 
+    MenuItemList, 
+    HighlightedMenuItemsList,
+    
+    # Admin views (for restaurant management)
+    RestaurantDetailAdmin,
+    MenuGroupListAdmin,
+    MenuCategoryListAdmin,
+    MenuItemListAdmin,
+    MenuItemDetailAdmin,
+    HighlightedMenuItemsListAdmin,
 )
 
 urlpatterns = [
+    # ============================================
+    # CUSTOMER/PUBLIC ENDPOINTS (Original - for QR menu)
+    # No authentication required
+    # ============================================
     path('restaurants/<int:pk>/', RestaurantDetail.as_view(), name='restaurant-detail'),
     path('restaurants/<int:restaurant_pk>/highlighted-items/', HighlightedMenuItemsList.as_view(), name='highlighted-items'),
     path('menu-groups/', MenuGroupList.as_view(), name='menu-group-list'),
     path('menu-categories/', MenuCategoryList.as_view(), name='menu-category-list'),
     path('menu-items/', MenuItemList.as_view(), name='menu-item-list'),
+    
+    # ============================================
+    # ADMIN ENDPOINTS (New - for restaurant management)
+    # Requires authentication & filters by user's restaurant
+    # ============================================
+    path('admin/restaurants/<int:pk>/', RestaurantDetailAdmin.as_view(), name='admin-restaurant-detail'),
+    path('admin/restaurants/<int:restaurant_pk>/highlighted-items/', HighlightedMenuItemsListAdmin.as_view(), name='admin-highlighted-items'),
+    path('admin/menu-groups/', MenuGroupListAdmin.as_view(), name='admin-menu-group-list'),
+    path('admin/menu-categories/', MenuCategoryListAdmin.as_view(), name='admin-menu-category-list'),
+    
+    # Menu Items - Full CRUD for admins
+    path('admin/menu-items/', MenuItemListAdmin.as_view(), name='admin-menu-item-list'),  # GET (list) + POST (create)
+    path('admin/menu-items/<int:pk>/', MenuItemDetailAdmin.as_view(), name='admin-menu-item-detail'),  # GET, PUT, PATCH, DELETE
 ]
