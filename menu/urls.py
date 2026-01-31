@@ -12,6 +12,7 @@ from .views.api_views import (
     RestaurantDetailAdmin,
     MenuGroupListAdmin,
     MenuCategoryListAdmin,
+    MenuCategoryDetailAdmin,
     MenuItemListAdmin,
     MenuItemDetailAdmin,
     HighlightedMenuItemsListAdmin,
@@ -35,7 +36,9 @@ urlpatterns = [
     path('admin/restaurants/<int:pk>/', RestaurantDetailAdmin.as_view(), name='admin-restaurant-detail'),
     path('admin/restaurants/<int:restaurant_pk>/highlighted-items/', HighlightedMenuItemsListAdmin.as_view(), name='admin-highlighted-items'),
     path('admin/menu-groups/', MenuGroupListAdmin.as_view(), name='admin-menu-group-list'),
-    path('admin/menu-categories/', MenuCategoryListAdmin.as_view(), name='admin-menu-category-list'),
+    # Menu Categories - Full CRUD for admins
+    path('admin/menu-categories/', MenuCategoryListAdmin.as_view(), name='admin-menu-category-list'),  # GET (list) + POST (create)
+    path('admin/menu-categories/<int:pk>/', MenuCategoryDetailAdmin.as_view(), name='admin-menu-category-detail'),  # GET, PUT, PATCH, DELETE
     
     # Menu Items - Full CRUD for admins
     path('admin/menu-items/', MenuItemListAdmin.as_view(), name='admin-menu-item-list'),  # GET (list) + POST (create)

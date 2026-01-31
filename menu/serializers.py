@@ -68,14 +68,62 @@ class MenuCategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cat_order', 'is_disabled', 'items')
     
     def get_items(self, obj):
-        # Filter out disabled items + order them
-        active_items = obj.items.filter(is_disabled=False).order_by('item_order')
-        return MenuItemSerializer(active_items, many=True).data
+        # Include all items (including disabled) - frontend handles disabled state
+        all_items = obj.items.all().order_by('item_order')
+        return MenuItemSerializer(all_items, many=True).data
     
     def get_image(self, obj):
         if obj.image:
             return obj.image.url.replace("/upload/", "/upload/w_400,q_auto,f_auto/")
         return None
+
+
+class MenuCategoryAdminSerializer(serializers.ModelSerializer):
+    """
+    Admin serializer for MenuCategory with full CRUD support including image upload.
+    """
+    image = serializers.SerializerMethodField(read_only=True)
+    image_upload = serializers.ImageField(write_only=True, required=False)
+    menu_group_name = serializers.CharField(source='menu_group.type', read_only=True)
+    item_count = serializers.SerializerMethodField(read_only=True)
+    
+    class Meta:
+        model = MenuCategory
+        fields = (
+            'id', 'name', 'image', 'image_upload', 'cat_order', 
+            'is_disabled', 'menu_group', 'menu_group_name', 'item_count'
+        )
+        read_only_fields = ('id',)
+    
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url.replace("/upload/", "/upload/w_400,q_auto,f_auto/")
+        return None
+    
+    def get_item_count(self, obj):
+        return obj.items.count()
+    
+    def create(self, validated_data):
+        image_upload = validated_data.pop('image_upload', None)
+        category = MenuCategory.objects.create(**validated_data)
+        
+        if image_upload:
+            category.image = image_upload
+            category.save()
+        
+        return category
+    
+    def update(self, instance, validated_data):
+        image_upload = validated_data.pop('image_upload', None)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        if image_upload:
+            instance.image = image_upload
+        
+        instance.save()
+        return instance
 
 
 class MenuGroupSerializer(serializers.ModelSerializer):

@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from menu.models import Restaurant, MenuGroup, MenuCategory, MenuItem
 from menu.serializers import (
     RestaurantSerializer, MenuGroupSerializer,
-    MenuCategorySerializer, MenuItemSerializer
+    MenuCategorySerializer, MenuCategoryAdminSerializer, MenuItemSerializer
 )
 
 
@@ -118,10 +118,14 @@ class MenuGroupListAdmin(generics.ListAPIView):
         return queryset
 
 
-class MenuCategoryListAdmin(generics.ListAPIView):
-    """Admin view - List categories for manager's restaurant"""
+class MenuCategoryListAdmin(generics.ListCreateAPIView):
+    """
+    Admin view - List and create categories
+    GET: List categories (only from manager's restaurant)
+    POST: Create a new category (only in manager's restaurant)
+    """
     queryset = MenuCategory.objects.all()
-    serializer_class = MenuCategorySerializer
+    serializer_class = MenuCategoryAdminSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -134,7 +138,61 @@ class MenuCategoryListAdmin(generics.ListAPIView):
         if menu_group_id is not None:
             queryset = queryset.filter(menu_group_id=menu_group_id)
         
-        return queryset
+        # Filter by is_disabled if provided
+        is_disabled = self.request.query_params.get('is_disabled', None)
+        if is_disabled is not None:
+            queryset = queryset.filter(is_disabled=is_disabled.lower() == 'true')
+        
+        return queryset.order_by('cat_order', 'id')
+    
+    def perform_create(self, serializer):
+        """Ensure user can only create categories in menu groups they manage"""
+        menu_group = serializer.validated_data.get('menu_group')
+        user = self.request.user
+        
+        if not menu_group.restaurant.managers_and_staff.filter(id=user.id).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You don't have permission to add categories to this menu group.")
+        
+        serializer.save()
+
+
+class MenuCategoryDetailAdmin(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Admin view - Manage single category
+    GET/PUT/PATCH/DELETE: Only from manager's restaurant
+    """
+    queryset = MenuCategory.objects.all()
+    serializer_class = MenuCategoryAdminSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+    
+    def get_queryset(self):
+        user = self.request.user
+        return MenuCategory.objects.filter(
+            menu_group__restaurant__managers_and_staff=user
+        )
+    
+    def perform_update(self, serializer):
+        """Ensure user can only update categories they manage"""
+        instance = self.get_object()
+        user = self.request.user
+        
+        if not instance.menu_group.restaurant.managers_and_staff.filter(id=user.id).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You don't have permission to update this category.")
+        
+        serializer.save()
+    
+    def perform_destroy(self, instance):
+        """Ensure user can only delete categories they manage"""
+        user = self.request.user
+        
+        if not instance.menu_group.restaurant.managers_and_staff.filter(id=user.id).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You don't have permission to delete this category.")
+        
+        instance.delete()
 
 
 class MenuItemListAdmin(generics.ListCreateAPIView):
