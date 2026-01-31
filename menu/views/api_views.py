@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from menu.models import Restaurant, MenuGroup, MenuCategory, MenuItem
 from menu.serializers import (
-    RestaurantSerializer, MenuGroupSerializer,
+    RestaurantSerializer, MenuGroupSerializer, MenuGroupAdminSerializer,
     MenuCategorySerializer, MenuCategoryAdminSerializer, MenuItemSerializer
 )
 
@@ -99,10 +99,14 @@ class RestaurantDetailAdmin(generics.RetrieveAPIView):
         ).prefetch_related('menu_groups__categories__items')
 
 
-class MenuGroupListAdmin(generics.ListAPIView):
-    """Admin view - List menu groups for manager's restaurant"""
+class MenuGroupListAdmin(generics.ListCreateAPIView):
+    """
+    Admin view - List and create menu groups
+    GET: List menu groups (only from manager's restaurant)
+    POST: Create a new menu group (only in manager's restaurant)
+    """
     queryset = MenuGroup.objects.all()
-    serializer_class = MenuGroupSerializer
+    serializer_class = MenuGroupAdminSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -115,7 +119,56 @@ class MenuGroupListAdmin(generics.ListAPIView):
         if restaurant_id is not None:
             queryset = queryset.filter(restaurant_id=restaurant_id)
         
-        return queryset
+        return queryset.order_by('group_order', 'id')
+    
+    def perform_create(self, serializer):
+        """Ensure user can only create menu groups in restaurants they manage"""
+        restaurant = serializer.validated_data.get('restaurant')
+        user = self.request.user
+        
+        if not restaurant.managers_and_staff.filter(id=user.id).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You don't have permission to add menu groups to this restaurant.")
+        
+        serializer.save()
+
+
+class MenuGroupDetailAdmin(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Admin view - Manage single menu group
+    GET/PUT/PATCH/DELETE: Only from manager's restaurant
+    """
+    queryset = MenuGroup.objects.all()
+    serializer_class = MenuGroupAdminSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+    
+    def get_queryset(self):
+        user = self.request.user
+        return MenuGroup.objects.filter(
+            restaurant__managers_and_staff=user
+        )
+    
+    def perform_update(self, serializer):
+        """Ensure user can only update menu groups they manage"""
+        instance = self.get_object()
+        user = self.request.user
+        
+        if not instance.restaurant.managers_and_staff.filter(id=user.id).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You don't have permission to update this menu group.")
+        
+        serializer.save()
+    
+    def perform_destroy(self, instance):
+        """Ensure user can only delete menu groups they manage"""
+        user = self.request.user
+        
+        if not instance.restaurant.managers_and_staff.filter(id=user.id).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You don't have permission to delete this menu group.")
+        
+        instance.delete()
 
 
 class MenuCategoryListAdmin(generics.ListCreateAPIView):

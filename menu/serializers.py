@@ -134,6 +134,24 @@ class MenuGroupSerializer(serializers.ModelSerializer):
         fields = ('id', 'type', 'group_order', 'categories')
 
 
+class MenuGroupAdminSerializer(serializers.ModelSerializer):
+    """
+    Admin serializer for MenuGroup with full CRUD support.
+    """
+    restaurant_name = serializers.CharField(source='restaurant.name', read_only=True)
+    category_count = serializers.SerializerMethodField(read_only=True)
+    
+    class Meta:
+        model = MenuGroup
+        fields = (
+            'id', 'type', 'group_order', 'restaurant', 'restaurant_name', 'category_count'
+        )
+        read_only_fields = ('id',)
+    
+    def get_category_count(self, obj):
+        return obj.categories.count()
+
+
 class RestaurantSerializer(serializers.ModelSerializer):
     menu_groups = MenuGroupSerializer(many=True, read_only=True)
     announcements = serializers.SerializerMethodField()
