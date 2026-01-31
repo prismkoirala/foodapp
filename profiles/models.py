@@ -83,6 +83,9 @@ class CustomUser(AbstractUser):
         ('MANAGER', 'Restaurant Manager'),
         ('OWNER', 'Restaurant Owner'),
         ('STAFF', 'Staff'),
+        ('WAITER', 'Waiter'),
+        ('CASHIER', 'Cashier'),
+        ('COOK', 'Cook')
     )
     role = models.CharField(
         max_length=20,

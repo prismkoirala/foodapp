@@ -111,8 +111,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 code='authorization'
             )
         
-        # IMPORTANT: Only allow MANAGER, OWNER, STAFF to login to admin panel
-        if user.role not in ['MANAGER', 'OWNER', 'STAFF']:
+        # IMPORTANT: Only allow MANAGER, OWNER, STAFF, COOK, WAITER, CASHIER to login to admin panel
+        if user.role not in ['MANAGER', 'OWNER', 'STAFF', 'COOK', 'WAITER', 'CASHIER']:
             raise serializers.ValidationError(
                 _("Access denied. Only staff members can access this panel."),
                 code='authorization'

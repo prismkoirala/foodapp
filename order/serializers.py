@@ -17,13 +17,25 @@ class OrderItemCreateSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(min_value=1)
 
 
+class OrderItemStatusUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ('status',)
+        
+    def validate_status(self, value):
+        valid_statuses = [choice[0] for choice in OrderItem.STATUS_CHOICES]
+        if value not in valid_statuses:
+            raise serializers.ValidationError(f"Invalid status. Must be one of: {valid_statuses}")
+        return value
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     menu_item_name = serializers.CharField(source='menu_item.name', read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'menu_item', 'menu_item_name', 'quantity', 'unit_price')
-        read_only_fields = ('id', 'unit_price')
+        fields = ('id', 'menu_item', 'menu_item_name', 'quantity', 'unit_price', 'status', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'unit_price', 'created_at', 'updated_at')
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -58,14 +70,13 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         if restaurant is None:
             raise serializers.ValidationError({'restaurant': 'This field is required.'})
 
-        if table is None:
-            raise serializers.ValidationError({'table': 'This field is required.'})
+        # Table is optional - validate only if provided
+        if table is not None:
+            if not table.is_active:
+                raise serializers.ValidationError({'table': 'Table is not active.'})
 
-        if not table.is_active:
-            raise serializers.ValidationError({'table': 'Table is not active.'})
-
-        if table and table.restaurant_id != restaurant.id:
-            raise serializers.ValidationError({'table': 'Table does not belong to this restaurant.'})
+            if table.restaurant_id != restaurant.id:
+                raise serializers.ValidationError({'table': 'Table does not belong to this restaurant.'})
 
         if not items:
             raise serializers.ValidationError({'items': 'At least one item is required.'})
@@ -111,6 +122,14 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             )
 
         OrderItem.objects.bulk_create(order_items)
+        
+        # Refresh instance to get items with prefetch
+        order = Order.objects.select_related(
+            'restaurant', 'table', 'created_by'
+        ).prefetch_related(
+            'items__menu_item'
+        ).get(pk=order.pk)
+        
         return order
 
     def to_representation(self, instance):
@@ -121,3 +140,65 @@ class OrderStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('status',)
+
+
+# ────────────────────────────────────────────────
+# Admin Serializers
+# ────────────────────────────────────────────────
+
+class RestaurantTableAdminSerializer(serializers.ModelSerializer):
+    """
+    Admin serializer for RestaurantTable with full CRUD support.
+    """
+    restaurant_name = serializers.CharField(source='restaurant.name', read_only=True)
+    order_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = RestaurantTable
+        fields = (
+            'id', 'name', 'capacity', 'is_active', 'restaurant', 'restaurant_name', 'order_count'
+        )
+        read_only_fields = ('id',)
+
+    def get_order_count(self, obj):
+        return obj.orders.count()
+
+
+class OrderAdminSerializer(serializers.ModelSerializer):
+    """
+    Admin serializer for Order with full CRUD support.
+    Includes Nepali date fields for day book / filtering.
+    """
+    items = OrderItemSerializer(many=True, read_only=True)
+    total = serializers.SerializerMethodField(read_only=True)
+    restaurant_name = serializers.CharField(source='restaurant.name', read_only=True)
+    table_name = serializers.CharField(source='table.name', read_only=True, allow_null=True)
+    created_by_name = serializers.SerializerMethodField(read_only=True)
+    nepali_date_formatted = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            'id', 'restaurant', 'restaurant_name', 'table', 'table_name',
+            'status', 'created_by', 'created_by_name', 'created_at', 'updated_at',
+            'nepali_date', 'nepali_year', 'nepali_month', 'nepali_day', 'nepali_date_formatted',
+            'items', 'total', 'final_total'
+        )
+        read_only_fields = ('id', 'created_at', 'updated_at', 'nepali_date', 'nepali_year', 'nepali_month', 'nepali_day')
+
+    def get_total(self, obj):
+        return str(obj.total)
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return obj.created_by.get_full_name() or obj.created_by.phone or obj.created_by.email
+        return None
+
+
+class OrderCheckoutSerializer(serializers.ModelSerializer):
+    """
+    Serializer for completing checkout with final_total.
+    """
+    class Meta:
+        model = Order
+        fields = ('final_total',)
