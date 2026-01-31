@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     "cloudinary_storage",
     "profiles",
     "menu",
+    "order",
     "utils",
 ]
 

@@ -65,7 +65,7 @@ class MenuCategorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = MenuCategory
-        fields = ('id', 'name', 'image', 'cat_order', 'items')
+        fields = ('id', 'name', 'image', 'cat_order', 'is_disabled', 'items')
     
     def get_items(self, obj):
         # Filter out disabled items + order them

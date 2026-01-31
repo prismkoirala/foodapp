@@ -67,6 +67,7 @@ class MenuCategory(models.Model):
     )
     menu_group = models.ForeignKey(MenuGroup, on_delete=models.CASCADE, related_name='categories')
     cat_order = models.PositiveIntegerField(default=0)
+    is_disabled = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['cat_order']
