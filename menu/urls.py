@@ -11,12 +11,14 @@ from .views.api_views import (
     # Admin views (for restaurant management)
     RestaurantDetailAdmin,
     MenuGroupListAdmin,
-    MenuGroupDetailAdmin,
     MenuCategoryListAdmin,
     MenuCategoryDetailAdmin,
     MenuItemListAdmin,
     MenuItemDetailAdmin,
     HighlightedMenuItemsListAdmin,
+    
+    # View menu count tracking
+    increment_view_menu_count,
 )
 
 urlpatterns = [
@@ -26,6 +28,7 @@ urlpatterns = [
     # ============================================
     path('restaurants/<int:pk>/', RestaurantDetail.as_view(), name='restaurant-detail'),
     path('restaurants/<int:restaurant_pk>/highlighted-items/', HighlightedMenuItemsList.as_view(), name='highlighted-items'),
+    path('restaurants/<int:restaurant_pk>/increment-view-count/', increment_view_menu_count, name='increment-view-count'),
     path('menu-groups/', MenuGroupList.as_view(), name='menu-group-list'),
     path('menu-categories/', MenuCategoryList.as_view(), name='menu-category-list'),
     path('menu-items/', MenuItemList.as_view(), name='menu-item-list'),
@@ -36,9 +39,7 @@ urlpatterns = [
     # ============================================
     path('admin/restaurants/<int:pk>/', RestaurantDetailAdmin.as_view(), name='admin-restaurant-detail'),
     path('admin/restaurants/<int:restaurant_pk>/highlighted-items/', HighlightedMenuItemsListAdmin.as_view(), name='admin-highlighted-items'),
-    # Menu Groups - Full CRUD for admins
-    path('admin/menu-groups/', MenuGroupListAdmin.as_view(), name='admin-menu-group-list'),  # GET (list) + POST (create)
-    path('admin/menu-groups/<int:pk>/', MenuGroupDetailAdmin.as_view(), name='admin-menu-group-detail'),  # GET, PUT, PATCH, DELETE
+    path('admin/menu-groups/', MenuGroupListAdmin.as_view(), name='admin-menu-group-list'),
     # Menu Categories - Full CRUD for admins
     path('admin/menu-categories/', MenuCategoryListAdmin.as_view(), name='admin-menu-category-list'),  # GET (list) + POST (create)
     path('admin/menu-categories/<int:pk>/', MenuCategoryDetailAdmin.as_view(), name='admin-menu-category-detail'),  # GET, PUT, PATCH, DELETE

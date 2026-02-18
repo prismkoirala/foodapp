@@ -2,6 +2,8 @@
 from rest_framework import generics, filters, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view
+from django.http import JsonResponse
 from menu.models import Restaurant, MenuGroup, MenuCategory, MenuItem
 from menu.serializers import (
     RestaurantSerializer, MenuGroupSerializer, MenuGroupAdminSerializer,
@@ -99,14 +101,10 @@ class RestaurantDetailAdmin(generics.RetrieveAPIView):
         ).prefetch_related('menu_groups__categories__items')
 
 
-class MenuGroupListAdmin(generics.ListCreateAPIView):
-    """
-    Admin view - List and create menu groups
-    GET: List menu groups (only from manager's restaurant)
-    POST: Create a new menu group (only in manager's restaurant)
-    """
+class MenuGroupListAdmin(generics.ListAPIView):
+    """Admin view - List menu groups for manager's restaurant"""
     queryset = MenuGroup.objects.all()
-    serializer_class = MenuGroupAdminSerializer
+    serializer_class = MenuGroupSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -119,56 +117,7 @@ class MenuGroupListAdmin(generics.ListCreateAPIView):
         if restaurant_id is not None:
             queryset = queryset.filter(restaurant_id=restaurant_id)
         
-        return queryset.order_by('group_order', 'id')
-    
-    def perform_create(self, serializer):
-        """Ensure user can only create menu groups in restaurants they manage"""
-        restaurant = serializer.validated_data.get('restaurant')
-        user = self.request.user
-        
-        if not restaurant.managers_and_staff.filter(id=user.id).exists():
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("You don't have permission to add menu groups to this restaurant.")
-        
-        serializer.save()
-
-
-class MenuGroupDetailAdmin(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Admin view - Manage single menu group
-    GET/PUT/PATCH/DELETE: Only from manager's restaurant
-    """
-    queryset = MenuGroup.objects.all()
-    serializer_class = MenuGroupAdminSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'pk'
-    
-    def get_queryset(self):
-        user = self.request.user
-        return MenuGroup.objects.filter(
-            restaurant__managers_and_staff=user
-        )
-    
-    def perform_update(self, serializer):
-        """Ensure user can only update menu groups they manage"""
-        instance = self.get_object()
-        user = self.request.user
-        
-        if not instance.restaurant.managers_and_staff.filter(id=user.id).exists():
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("You don't have permission to update this menu group.")
-        
-        serializer.save()
-    
-    def perform_destroy(self, instance):
-        """Ensure user can only delete menu groups they manage"""
-        user = self.request.user
-        
-        if not instance.restaurant.managers_and_staff.filter(id=user.id).exists():
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("You don't have permission to delete this menu group.")
-        
-        instance.delete()
+        return queryset
 
 
 class MenuCategoryListAdmin(generics.ListCreateAPIView):
@@ -355,3 +304,29 @@ class HighlightedMenuItemsListAdmin(generics.ListAPIView):
             is_highlight=True,
             is_disabled=False
         ).order_by('item_order')
+
+
+# ============================================
+# VIEW MENU COUNT TRACKING
+# ============================================
+
+@api_view(['POST'])
+def increment_view_menu_count(request, restaurant_pk):
+    """
+    Increment the view_menu_count for a restaurant when View Menu button is pressed
+    Public endpoint - no authentication required
+    """
+    try:
+        restaurant = Restaurant.objects.get(pk=restaurant_pk)
+        restaurant.view_menu_count += 1
+        restaurant.save(update_fields=['view_menu_count'])
+        
+        return JsonResponse({
+            'success': True,
+            'view_menu_count': restaurant.view_menu_count
+        })
+    except Restaurant.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Restaurant not found'
+        }, status=404)

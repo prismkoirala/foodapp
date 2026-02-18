@@ -161,7 +161,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
         model = Restaurant
         fields = (
             'id', 'name', 'address', 'phone', 'logo', 'announcements',
-            'facebook_url', 'instagram_url', 'tiktok_url', 'menu_groups'
+            'facebook_url', 'instagram_url', 'tiktok_url', 'menu_groups', 'view_menu_count'
         )
     
     def get_announcements(self, obj):

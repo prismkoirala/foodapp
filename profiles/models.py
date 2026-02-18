@@ -118,3 +118,23 @@ class CustomUser(AbstractUser):
     @property
     def is_manager_or_owner(self):
         return self.role in ('MANAGER', 'OWNER', 'STAFF')
+
+
+class PromoPhoneNumber(models.Model):
+    """
+    Model to store phone numbers from users interested in promos
+    """
+    phone_number = models.CharField(max_length=15, help_text="Phone number for promo notifications")
+    restaurant = models.ForeignKey(
+        'menu.Restaurant', 
+        on_delete=models.CASCADE, 
+        related_name='promo_phone_numbers'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['phone_number', 'restaurant']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.phone_number} - {self.restaurant.name}"

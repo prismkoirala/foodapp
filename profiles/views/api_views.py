@@ -5,7 +5,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.contrib.auth import logout
-from profiles.serializers import CustomTokenObtainPairSerializer, UserSerializer
+from django.http import JsonResponse
+from profiles.serializers import CustomTokenObtainPairSerializer, UserSerializer, PromoPhoneNumberSerializer
+from profiles.models import PromoPhoneNumber
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -38,3 +40,66 @@ class CurrentUserView(APIView):
         # Use the serializer to format the response
         serializer = UserSerializer(user)
         return Response(serializer.data)
+
+
+class PromoPhoneNumberCreateView(APIView):
+    """
+    Public API to create promo phone number entries
+    No authentication required - for QR menu users
+    """
+    def post(self, request):
+        try:
+            phone_number = request.data.get('phone_number')
+            restaurant_id = request.data.get('restaurant_id')
+            
+            if not phone_number or not restaurant_id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Phone number and restaurant ID are required'
+                }, status=400)
+            
+            # Check if this phone number already exists for this restaurant
+            existing = PromoPhoneNumber.objects.filter(
+                phone_number=phone_number,
+                restaurant_id=restaurant_id
+            ).first()
+            
+            if existing:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Phone number already registered for promos!',
+                    'data': {
+                        'id': existing.id,
+                        'phone_number': existing.phone_number,
+                        'created_at': existing.created_at
+                    }
+                })
+            
+            # Create new promo phone number entry
+            serializer = PromoPhoneNumberSerializer(data={
+                'phone_number': phone_number,
+                'restaurant': restaurant_id
+            })
+            
+            if serializer.is_valid():
+                promo_phone = serializer.save()
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Successfully registered for promos! 🎉',
+                    'data': {
+                        'id': promo_phone.id,
+                        'phone_number': promo_phone.phone_number,
+                        'created_at': promo_phone.created_at
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': serializer.errors
+                }, status=400)
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)

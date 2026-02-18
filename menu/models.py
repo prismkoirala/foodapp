@@ -42,6 +42,7 @@ class Restaurant(models.Model):
     facebook_url = models.CharField(max_length=200, blank=True)
     instagram_url = models.CharField(max_length=200, blank=True)
     tiktok_url = models.CharField(max_length=200, blank=True)
+    view_menu_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.name

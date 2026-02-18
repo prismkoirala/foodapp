@@ -17,7 +17,7 @@ class MenuGroupInline(admin.TabularInline):
 
 @admin.register(Restaurant)
 class RestaurantAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address', 'phone')
+    list_display = ('name', 'address', 'phone', 'view_menu_count')
     inlines = [MenuGroupInline]
 
 @admin.register(MenuGroup)

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import CustomUser
+from .models import CustomUser, PromoPhoneNumber
 
 
 @admin.register(CustomUser)
@@ -112,3 +112,56 @@ class CustomUserAdmin(BaseUserAdmin):
             form.base_fields['email'].required = True
             
         return form
+
+
+@admin.register(PromoPhoneNumber)
+class PromoPhoneNumberAdmin(admin.ModelAdmin):
+    """
+    Admin interface for PromoPhoneNumber model
+    """
+    list_display = ('phone_number', 'restaurant', 'created_at', 'get_formatted_date')
+    list_filter = ('restaurant', 'created_at')
+    search_fields = ('phone_number', 'restaurant__name')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at',)
+    
+    fieldsets = (
+        ('Phone Number Information', {
+            'fields': ('phone_number', 'restaurant')
+        }),
+        ('Timestamp Information', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_formatted_date(self, obj):
+        """Display formatted date for better readability"""
+        return obj.created_at.strftime('%Y-%m-%d %H:%M')
+    get_formatted_date.short_description = 'Date Added'
+    
+    def get_queryset(self, request):
+        """Optimize query by selecting related restaurant"""
+        return super().get_queryset(request).select_related('restaurant')
+    
+    # Optional: Add action to export phone numbers
+    actions = ['export_phone_numbers']
+    
+    def export_phone_numbers(self, request, queryset):
+        """Export selected phone numbers as CSV"""
+        import csv
+        from django.http import HttpResponse
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="promo_phone_numbers.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Phone Number', 'Restaurant', 'Date Added'])
+        
+        for obj in queryset:
+            writer.writerow([obj.phone_number, obj.restaurant.name, obj.created_at.strftime('%Y-%m-%d %H:%M')])
+        
+        self.message_user(request, f"Exported {queryset.count()} phone numbers successfully.")
+        return response
+    
+    export_phone_numbers.short_description = 'Export selected phone numbers'

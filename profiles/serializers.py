@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
-from profiles.models import CustomUser
+from profiles.models import CustomUser, PromoPhoneNumber
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 
@@ -131,3 +131,21 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['user'] = user_serializer.data
         
         return data
+
+
+class PromoPhoneNumberSerializer(serializers.ModelSerializer):
+    """
+    Serializer for PromoPhoneNumber model
+    """
+    class Meta:
+        model = PromoPhoneNumber
+        fields = ['id', 'phone_number', 'restaurant', 'created_at']
+        read_only_fields = ['id', 'created_at']
+    
+    def validate_phone_number(self, value):
+        """Basic phone number validation"""
+        # Remove any non-digit characters for validation
+        clean_phone = ''.join(filter(str.isdigit, value))
+        if len(clean_phone) < 10:
+            raise serializers.ValidationError("Phone number must be at least 10 digits")
+        return value
