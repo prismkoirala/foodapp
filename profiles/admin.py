@@ -41,12 +41,13 @@ class CustomUserAdmin(BaseUserAdmin):
     # List view columns
     list_display = (
         'get_identifier',
+        'email',
         'role',
         'first_name',
         'last_name',
+        'get_managed_restaurants',
         'is_active',
         'is_staff',
-        'date_joined',
     )
 
     # Make these clickable to go to detail view
@@ -58,7 +59,6 @@ class CustomUserAdmin(BaseUserAdmin):
         'is_active',
         'is_staff',
         'is_superuser',
-        'date_joined',
     )
 
     # Search fields (very useful)
@@ -71,7 +71,7 @@ class CustomUserAdmin(BaseUserAdmin):
     )
 
     # Ordering in list view
-    ordering = ('-date_joined',)
+    ordering = ('-id',)  # Order by newest first (since we removed date_joined)
 
     # Show managed restaurants inline (nice for managers)
     filter_horizontal = ('managed_restaurants', 'groups', 'user_permissions')
@@ -93,6 +93,16 @@ class CustomUserAdmin(BaseUserAdmin):
     
     get_identifier.short_description = _('Login Identifier')
     get_identifier.admin_order_field = 'phone'  # sort by phone if possible
+
+    def get_managed_restaurants(self, obj):
+        """
+        Display comma-separated list of managed restaurant names
+        """
+        restaurants = obj.managed_restaurants.all()
+        if restaurants:
+            return ', '.join([restaurant.name for restaurant in restaurants[:3]])  # Show max 3 restaurants
+        return '-'
+    get_managed_restaurants.short_description = _('Restaurants')
 
     def get_queryset(self, request):
         """
