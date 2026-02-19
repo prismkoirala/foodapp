@@ -4,6 +4,64 @@ from .models import Restaurant, MenuGroup, MenuCategory, MenuItem
 from utils.serializers import AnnouncementSerializer
 
 
+class BulkMenuItemCreateSerializer(serializers.Serializer):
+    """
+    Serializer for bulk creating menu items for a specific category
+    """
+    items = serializers.ListField(
+        child=serializers.DictField(),
+        min_length=1,
+        max_length=50,  # Limit to prevent abuse
+        help_text="List of menu items to create"
+    )
+    
+    def validate_items(self, items):
+        """Validate each item in the bulk list"""
+        required_fields = ['name', 'price']
+        optional_fields = ['description', 'item_order', 'is_disabled', 'is_highlight']
+        
+        for i, item in enumerate(items):
+            # Check required fields
+            for field in required_fields:
+                if field not in item:
+                    raise serializers.ValidationError(
+                        f"Item {i+1}: Missing required field '{field}'"
+                    )
+            
+            # Validate field types
+            if not isinstance(item['name'], str) or not item['name'].strip():
+                raise serializers.ValidationError(f"Item {i+1}: Name must be a non-empty string")
+            
+            try:
+                price = float(item['price'])
+                if price <= 0:
+                    raise serializers.ValidationError(f"Item {i+1}: Price must be greater than 0")
+                item['price'] = str(price)  # Convert to string for DecimalField
+            except (ValueError, TypeError):
+                raise serializers.ValidationError(f"Item {i+1}: Price must be a valid number")
+            
+            # Validate optional fields
+            if 'description' in item and not isinstance(item['description'], str):
+                item['description'] = str(item['description'])
+            
+            if 'item_order' in item:
+                try:
+                    item_order = int(item['item_order'])
+                    if item_order < 0:
+                        raise serializers.ValidationError(f"Item {i+1}: Item order must be non-negative")
+                    item['item_order'] = item_order
+                except (ValueError, TypeError):
+                    raise serializers.ValidationError(f"Item {i+1}: Item order must be a valid integer")
+            
+            if 'is_disabled' in item:
+                item['is_disabled'] = bool(item['is_disabled'])
+            
+            if 'is_highlight' in item:
+                item['is_highlight'] = bool(item['is_highlight'])
+        
+        return items
+
+
 class MenuItemSerializer(serializers.ModelSerializer):
     """
     Serializer for MenuItem with:

@@ -2,12 +2,13 @@
 from rest_framework import generics, filters, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from django.http import JsonResponse
 from menu.models import Restaurant, MenuGroup, MenuCategory, MenuItem
 from menu.serializers import (
     RestaurantSerializer, MenuGroupSerializer, MenuGroupAdminSerializer,
-    MenuCategorySerializer, MenuCategoryAdminSerializer, MenuItemSerializer
+    MenuCategorySerializer, MenuCategoryAdminSerializer, MenuItemSerializer,
+    BulkMenuItemCreateSerializer
 )
 
 
@@ -330,3 +331,67 @@ def increment_view_menu_count(request, restaurant_pk):
             'success': False,
             'error': 'Restaurant not found'
         }, status=404)
+
+
+# ============================================
+# BULK MENU ITEM CREATION
+# ============================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bulk_create_menu_items(request, category_pk):
+    """
+    Bulk create menu items for a specific category
+    POST: Create multiple menu items at once
+    """
+    try:
+        # Get the category and verify permissions
+        category = MenuCategory.objects.get(pk=category_pk)
+        user = request.user
+        
+        # Verify user manages this category's restaurant
+        if not category.menu_group.restaurant.managers_and_staff.filter(id=user.id).exists():
+            return Response(
+                {'error': "You don't have permission to add items to this category."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validate and process bulk data
+        serializer = BulkMenuItemCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            items_data = serializer.validated_data['items']
+            created_items = []
+            
+            try:
+                # Create items in a transaction for data integrity
+                from django.db import transaction
+                with transaction.atomic():
+                    for item_data in items_data:
+                        # Set the category for each item
+                        item_data['category'] = category
+                        item = MenuItem.objects.create(**item_data)
+                        created_items.append(item)
+                
+                # Serialize created items for response
+                response_serializer = MenuItemSerializer(created_items, many=True)
+                
+                return Response({
+                    'success': True,
+                    'message': f'Successfully created {len(created_items)} menu items.',
+                    'created_items': response_serializer.data,
+                    'total_created': len(created_items)
+                }, status=status.HTTP_201_CREATED)
+                
+            except Exception as e:
+                return Response(
+                    {'error': f'Failed to create items: {str(e)}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except MenuCategory.DoesNotExist:
+        return Response(
+            {'error': 'Category not found.'},
+            status=status.HTTP_404_NOT_FOUND
+        )

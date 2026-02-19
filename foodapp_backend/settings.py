@@ -116,6 +116,7 @@ INSTALLED_APPS = [
     "menu",
     "order",
     "utils",
+    "billing"
 ]
 
 # settings.py

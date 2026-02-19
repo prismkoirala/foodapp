@@ -27,6 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
             'last_name',
             'full_name',
             'is_active',
+            'is_superuser',
             'managed_restaurants',
         ]
         read_only_fields = ['id', 'is_active', 'role']

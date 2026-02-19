@@ -19,6 +19,9 @@ from .views.api_views import (
     
     # View menu count tracking
     increment_view_menu_count,
+    
+    # Bulk operations
+    bulk_create_menu_items,
 )
 
 urlpatterns = [
@@ -47,4 +50,7 @@ urlpatterns = [
     # Menu Items - Full CRUD for admins
     path('admin/menu-items/', MenuItemListAdmin.as_view(), name='admin-menu-item-list'),  # GET (list) + POST (create)
     path('admin/menu-items/<int:pk>/', MenuItemDetailAdmin.as_view(), name='admin-menu-item-detail'),  # GET, PUT, PATCH, DELETE
+    
+    # Bulk operations
+    path('admin/menu-categories/<int:category_pk>/bulk-create-items/', bulk_create_menu_items, name='bulk-create-menu-items'),
 ]
