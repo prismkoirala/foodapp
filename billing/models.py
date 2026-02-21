@@ -368,6 +368,13 @@ class BillingRecord(models.Model):
         ('CANCELLED', _('Cancelled')),
     ]
     
+    BILLING_CYCLE_CHOICES = [
+        ('MONTHLY', _('Monthly')),
+        ('YEARLY', _('Yearly')),
+        ('BI_YEARLY', _('Bi-Yearly')),
+        ('ONE_TIME', _('One-Time')),
+    ]
+    
     PAYMENT_METHOD_CHOICES = [
         ('STRIPE', _('Stripe')),
         ('PAYPAL', _('PayPal')),
@@ -391,25 +398,38 @@ class BillingRecord(models.Model):
         verbose_name=_('Amount')
     )
     
+    description = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name=_('Description'),
+        help_text=_('Description of the billing item (e.g., "Setup Fee", "Custom Feature")')
+    )
+    
     currency = models.CharField(
         max_length=3,
-        default='USD',
+        default='NPR',
         verbose_name=_('Currency')
     )
     
     billing_cycle = models.CharField(
         max_length=10,
-        choices=RestaurantSubscription.BILLING_CYCLE_CHOICES,
+        choices=BILLING_CYCLE_CHOICES,
         verbose_name=_('Billing Cycle')
     )
     
-    # Period
+    # Period (optional for one-time payments)
     period_start = models.DateTimeField(
-        verbose_name=_('Period Start')
+        null=True,
+        blank=True,
+        verbose_name=_('Period Start'),
+        help_text=_('Required for recurring payments, optional for one-time payments')
     )
     
     period_end = models.DateTimeField(
-        verbose_name=_('Period End')
+        null=True,
+        blank=True,
+        verbose_name=_('Period End'),
+        help_text=_('Required for recurring payments, optional for one-time payments')
     )
     
     # Payment details
@@ -494,16 +514,51 @@ class BillingRecord(models.Model):
     def save(self, *args, **kwargs):
         # Calculate total amount if not set
         if not self.total_amount:
-            self.total_amount = self.amount - self.discount_amount + self.tax_amount
+            # Ensure all values are Decimal for arithmetic
+            amount = Decimal(str(self.amount)) if self.amount else Decimal('0.00')
+            discount_amount = Decimal(str(self.discount_amount)) if self.discount_amount else Decimal('0.00')
+            tax_amount = Decimal(str(self.tax_amount)) if self.tax_amount else Decimal('0.00')
+            
+            self.total_amount = amount - discount_amount + tax_amount
         super().save(*args, **kwargs)
     
     @property
     def is_overdue(self):
-        """Check if payment is overdue"""
+        """Check if payment is overdue (only applicable to recurring payments)"""
         from django.utils import timezone
+        # One-time payments cannot be overdue
+        if self.billing_cycle == 'ONE_TIME':
+            return False
         return (
             self.status == 'PENDING' and 
+            self.period_end and 
             self.period_end < timezone.now()
+        )
+
+    @classmethod
+    def create_one_time_payment(cls, subscription, amount, description, **kwargs):
+        """
+        Convenience method to create a one-time payment record
+        
+        Args:
+            subscription: RestaurantSubscription instance
+            amount: Decimal amount to charge
+            description: Description of the payment (e.g., "Setup Fee")
+            **kwargs: Additional fields (payment_method, etc.)
+        
+        Returns:
+            BillingRecord instance
+        """
+        from django.utils import timezone
+        
+        return cls.objects.create(
+            subscription=subscription,
+            amount=amount,
+            description=description,
+            billing_cycle='ONE_TIME',
+            period_start=None,
+            period_end=None,
+            **kwargs
         )
 
 

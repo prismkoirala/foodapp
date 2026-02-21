@@ -217,9 +217,14 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
 class BillingRecordSerializer(serializers.ModelSerializer):
     """Serializer for BillingRecord model"""
     subscription = RestaurantSubscriptionSerializer(read_only=True)
-    payment_method = PaymentMethodSerializer(read_only=True)
     subscription_id = serializers.IntegerField(write_only=True)
-    payment_method_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    
+    # Payment method as string field (from choices)
+    payment_method_display = serializers.SerializerMethodField()
+    
+    def get_payment_method_display(self, obj):
+        """Get display text for payment method"""
+        return obj.get_payment_method_display()
     
     # Computed fields
     total_amount = serializers.ReadOnlyField()
@@ -231,14 +236,15 @@ class BillingRecordSerializer(serializers.ModelSerializer):
             'id',
             'subscription',
             'subscription_id',
-            'payment_method',
-            'payment_method_id',
+            'description',
             'amount',
             'currency',
             'billing_cycle',
             'period_start',
             'period_end',
             'status',
+            'payment_method',
+            'payment_method_display',
             'transaction_id',
             'paid_at',
             'failed_at',

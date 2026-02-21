@@ -234,6 +234,7 @@ class BillingRecordAdmin(admin.ModelAdmin):
     """
     list_display = (
         'subscription',
+        'description',
         'amount',
         'currency',
         'total_amount',
@@ -262,6 +263,7 @@ class BillingRecordAdmin(admin.ModelAdmin):
         ('Billing Information', {
             'fields': (
                 'subscription',
+                'description',
                 'amount',
                 'currency',
                 'billing_cycle',
@@ -269,7 +271,8 @@ class BillingRecordAdmin(admin.ModelAdmin):
             )
         }),
         ('Period', {
-            'fields': ('period_start', 'period_end')
+            'fields': ('period_start', 'period_end'),
+            'description': 'Period dates are optional for one-time payments'
         }),
         ('Payment Details', {
             'fields': (
@@ -313,7 +316,12 @@ class BillingRecordAdmin(admin.ModelAdmin):
     
     def get_period_dates(self, obj):
         """Display billing period"""
-        return f"{obj.period_start.strftime('%Y-%m-%d')} to {obj.period_end.strftime('%Y-%m-%d')}"
+        if obj.billing_cycle == 'ONE_TIME':
+            return "One-time payment"
+        elif obj.period_start and obj.period_end:
+            return f"{obj.period_start.strftime('%Y-%m-%d')} to {obj.period_end.strftime('%Y-%m-%d')}"
+        else:
+            return "No period set"
     get_period_dates.short_description = _('Period')
     
     def is_overdue_status(self, obj):

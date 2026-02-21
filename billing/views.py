@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Q
 from .models import SubscriptionPlan, RestaurantSubscription, PaymentMethod, BillingRecord, BillingInvoice
+from menu.models import Restaurant
 from .serializers import (
     SubscriptionPlanSerializer,
     RestaurantSubscriptionSerializer,
@@ -12,7 +13,6 @@ from .serializers import (
     BillingRecordSerializer,
     BillingInvoiceSerializer
 )
-from menu.models import Restaurant
 
 
 class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
